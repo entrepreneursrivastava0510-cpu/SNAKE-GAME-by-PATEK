@@ -1,75 +1,119 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Snake Master by PATEK SCAMMER NG LAOS</title>
+<title>Snake Master Pro</title>
 
 <style>
 body{
-    margin:0;
-    text-align:center;
-    background:#111;
-    color:white;
-    font-family:Arial;
-}
-
-h1{
-    color:#00ff66;
-}
-
-button{
-    padding:12px 25px;
-    font-size:18px;
-    border:none;
-    border-radius:10px;
-    cursor:pointer;
-    background:#00ff66;
+background:#111;
+color:white;
+font-family:Arial;
+text-align:center;
 }
 
 canvas{
-    background:#000;
-    border:4px solid #00ff66;
-    margin-top:20px;
+background:#000;
+border:4px solid lime;
 }
-</style>
 
+button{
+padding:10px;
+margin:5px;
+font-size:18px;
+border-radius:10px;
+cursor:pointer;
+}
+
+.touch button{
+width:60px;
+height:50px;
+}
+
+</style>
 </head>
 
 <body>
 
-<h1>🐍 Snake Master</h1>
+<h1>🐍 Snake Master Pro</h1>
 
 <h2>
-Score: <span id="score">0</span>
-<br>
-High Score: <span id="high">0</span>
+Score: <span id="score">0</span><br>
+💰 Coins: <span id="coins">0</span><br>
+🏆 High Score: <span id="high">0</span>
 </h2>
 
-<button onclick="startGame()">START GAME</button>
+<button onclick="start()">START</button>
 
 <br>
+
+Choose Skin:
+<button onclick="skin='lime'">🟢</button>
+<button onclick="skin='yellow'">🟡</button>
+<button onclick="skin='cyan'">🔵</button>
+
+<br><br>
 
 <canvas id="game" width="400" height="400"></canvas>
 
 
+<div class="touch">
+
+<br>
+<button onclick="move(0,-20)">⬆️</button>
+<br>
+<button onclick="move(-20,0)">⬅️</button>
+<button onclick="move(0,20)">⬇️</button>
+<button onclick="move(20,0)">➡️</button>
+
+</div>
+
+
+<h2>🏆 Leaderboard</h2>
+<div id="board"></div>
+
+
 <script>
 
-const canvas=document.getElementById("game");
-const ctx=canvas.getContext("2d");
+let canvas=document.getElementById("game");
+let ctx=canvas.getContext("2d");
 
 let snake;
 let food;
 let dx;
 let dy;
 let score;
-let speed;
+let coins;
 let game;
 
+let skin="lime";
 
-let highScore = localStorage.getItem("highscore") || 0;
-document.getElementById("high").innerHTML=highScore;
+let high=localStorage.getItem("high")||0;
+document.getElementById("high").innerHTML=high;
 
 
-function startGame(){
+let totalCoins=localStorage.getItem("coins")||0;
+document.getElementById("coins").innerHTML=totalCoins;
+
+
+
+// SOUND
+
+function sound(){
+
+let a=new AudioContext();
+let o=a.createOscillator();
+
+o.connect(a.destination);
+o.start();
+o.stop(a.currentTime+.1);
+
+}
+
+
+
+// START
+
+function start(){
 
 snake=[
 {x:200,y:200}
@@ -82,22 +126,23 @@ y:100
 
 dx=20;
 dy=0;
-score=0;
-speed=120;
 
-document.getElementById("score").innerHTML=score;
+score=0;
+
+document.getElementById("score").innerHTML=0;
 
 clearInterval(game);
 
-game=setInterval(loop,speed);
+game=setInterval(loop,100);
 
 }
 
 
 
+
 function loop(){
 
-ctx.fillStyle="#000";
+ctx.fillStyle="black";
 ctx.fillRect(0,0,400,400);
 
 
@@ -107,7 +152,7 @@ ctx.fillStyle="red";
 ctx.fillRect(food.x,food.y,20,20);
 
 
-// snake move
+// move
 
 let head={
 x:snake[0].x+dx,
@@ -119,35 +164,25 @@ snake.unshift(head);
 
 // eat
 
-if(head.x===food.x && head.y===food.y){
+if(head.x==food.x && head.y==food.y){
 
 score++;
 
+coins=Number(totalCoins)+1;
+
+totalCoins=coins;
+
+localStorage.setItem("coins",coins);
+
+document.getElementById("coins").innerHTML=coins;
+
 document.getElementById("score").innerHTML=score;
 
-
-if(score>highScore){
-
-highScore=score;
-localStorage.setItem("highscore",highScore);
-document.getElementById("high").innerHTML=highScore;
-
-}
+sound();
 
 
 food.x=Math.floor(Math.random()*20)*20;
 food.y=Math.floor(Math.random()*20)*20;
-
-
-// faster
-
-if(speed>50){
-
-speed-=5;
-clearInterval(game);
-game=setInterval(loop,speed);
-
-}
 
 
 }else{
@@ -157,30 +192,52 @@ snake.pop();
 }
 
 
+
 // draw snake
 
-ctx.fillStyle="#00ff66";
+ctx.fillStyle=skin;
 
-snake.forEach(part=>{
+snake.forEach(p=>{
 
-ctx.fillRect(part.x,part.y,20,20);
+ctx.fillRect(
+p.x,
+p.y,
+20,
+20
+);
 
 });
 
 
 
-// wall collision
+// game over
 
 if(
-head.x<0 ||
-head.x>=400 ||
-head.y<0 ||
+head.x<0||
+head.y<0||
+head.x>=400||
 head.y>=400
 ){
 
-alert("Game Over! Score: "+score);
-
 clearInterval(game);
+
+saveScore();
+
+alert("Game Over Score: "+score);
+
+}
+
+}
+
+
+
+
+function move(x,y){
+
+if(dx+x!=0 || dy+y!=0){
+
+dx=x;
+dy=y;
 
 }
 
@@ -191,40 +248,68 @@ clearInterval(game);
 
 document.addEventListener("keydown",e=>{
 
+if(e.key=="ArrowUp")
+move(0,-20);
 
-if(e.key==="ArrowUp" && dy===0){
+if(e.key=="ArrowDown")
+move(0,20);
 
-dx=0;
-dy=-20;
+if(e.key=="ArrowLeft")
+move(-20,0);
 
-}
-
-
-if(e.key==="ArrowDown" && dy===0){
-
-dx=0;
-dy=20;
-
-}
-
-
-if(e.key==="ArrowLeft" && dx===0){
-
-dx=-20;
-dy=0;
-
-}
-
-
-if(e.key==="ArrowRight" && dx===0){
-
-dx=20;
-dy=0;
-
-}
-
+if(e.key=="ArrowRight")
+move(20,0);
 
 });
+
+
+
+
+// LEADERBOARD
+
+function saveScore(){
+
+let scores=
+JSON.parse(localStorage.getItem("scores")||"[]");
+
+scores.push(score);
+
+scores.sort((a,b)=>b-a);
+
+scores=scores.slice(0,5);
+
+localStorage.setItem(
+"scores",
+JSON.stringify(scores)
+);
+
+
+if(score>high){
+
+high=score;
+
+localStorage.setItem("high",high);
+
+}
+
+showBoard();
+
+}
+
+
+function showBoard(){
+
+let scores=
+JSON.parse(localStorage.getItem("scores")||"[]");
+
+document.getElementById("board").innerHTML=
+scores.map((x,i)=>
+(i+1)+". "+x
+).join("<br>");
+
+}
+
+showBoard();
 
 
 </script>
